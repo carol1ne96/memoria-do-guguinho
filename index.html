@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memória do Guguinho</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            font-family: 'Poppins', sans-serif;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        #tries {
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(4, 60px);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .card {
+            width: 60px;
+            height: 60px;
+            background-color: #4B0082;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0;
+            color: #FFD700;
+            cursor: pointer;
+            border-radius: 5px;
+            user-select: none;
+        }
+        .card.revealed, .card.matched {
+            background-color: #FFFFFF;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        #restart-btn {
+            background-color: #FF69B4;
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #feedback {
+            margin-top: 20px;
+            display: none;
+        }
+        #feedback img {
+            width: 150px;
+            height: auto;
+            border-radius: 10px;
+        }
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.2rem;
+            }
+            #tries {
+                font-size: 0.9rem;
+            }
+            #grid {
+                grid-template-columns: repeat(4, 50px);
+            }
+            .card {
+                width: 50px;
+                height: 50px;
+            }
+            .card.revealed, .card.matched {
+                font-size: 0.9rem;
+            }
+            #restart-btn {
+                font-size: 0.9rem;
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Memória do Guguinho</h1>
+    <div id="tries">Tentativas: 0</div>
+    <div id="grid"></div>
+    <button id="restart-btn">Jogar Novamente</button>
+    <div id="feedback"></div>
+
+    <script>
+        const wordPairs = [
+            "CASA", "CASA",
+            "GATO", "GATO",
+            "SOL", "SOL",
+            "LUA", "LUA",
+            "BOLA", "BOLA",
+            "FLOR", "FLOR"
+        ];
+
+        let cards = [...wordPairs];
+        let revealedCards = [];
+        let matchedPairs = 0;
+        let tries = 0;
+
+        // Embaralha as cartas
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Renderiza o grid
+        function renderGrid() {
+            shuffle(cards);
+            const gridElement = document.getElementById('grid');
+            gridElement.innerHTML = '';
+            cards.forEach((word, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.index = index;
+                card.dataset.word = word;
+                card.addEventListener('click', handleCardClick);
+                gridElement.appendChild(card);
+            });
+        }
+
+        // Lida com o clique nas cartas
+        function handleCardClick(event) {
+            const card = event.target;
+            if (card.classList.contains('revealed') || card.classList.contains('matched') || revealedCards.length === 2) return;
+
+            card.classList.add('revealed');
+            card.textContent = card.dataset.word;
+            revealedCards.push(card);
+
+            if (revealedCards.length === 2) {
+                tries++;
+                document.getElementById('tries').textContent = `Tentativas: ${tries}`;
+                checkMatch();
+            }
+        }
+
+        // Verifica se as cartas formam um par
+        function checkMatch() {
+            const [card1, card2] = revealedCards;
+            const feedbackElement = document.getElementById('feedback');
+            const restartBtn = document.getElementById('restart-btn');
+
+            if (card1.dataset.word === card2.dataset.word) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                feedbackElement.innerHTML = '<img src="https://i.ibb.co/mmyBb56/IMG-1386.jpg" alt="Certo">';
+                matchedPairs++;
+                if (matchedPairs === wordPairs.length / 2) {
+                    document.getElementById('tries').textContent = `Parabéns! Você terminou em ${tries} tentativas!`;
+                    restartBtn.style.display = 'inline-block';
+                }
+            } else {
+                feedbackElement.innerHTML = '<img src="https://i.ibb.co/7tvprR1Y/IMG-1387.jpg" alt="Errado">';
+                setTimeout(() => {
+                    card1.classList.remove('revealed');
+                    card2.classList.remove('revealed');
+                    card1.textContent = '';
+                    card2.textContent = '';
+                }, 1000);
+            }
+            feedbackElement.style.display = 'block';
+            setTimeout(() => {
+                feedbackElement.style.display = 'none';
+            }, 1500);
+            revealedCards = [];
+        }
+
+        // Reinicia o jogo
+        function restartGame() {
+            cards = [...wordPairs];
+            revealedCards = [];
+            matchedPairs = 0;
+            tries = 0;
+            document.getElementById('tries').textContent = `Tentativas: ${tries}`;
+            document.getElementById('restart-btn').style.display = 'none';
+            renderGrid();
+        }
+
+        // Inicializa o jogo
+        renderGrid();
+        document.getElementById('restart-btn').addEventListener('click', restartGame);
+    </script>
+</body>
+</html>
